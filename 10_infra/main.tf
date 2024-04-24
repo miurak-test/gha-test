@@ -10,9 +10,9 @@ terraform {
     }
   }
   backend "s3" {
-    bucket  = "miurak-test.com"
-    key     = "test.tfstate"
-    region  = "ap-northeast-1"
+    bucket = "miurak-test.com"
+    key    = "test.tfstate"
+    region = "ap-northeast-1"
     # profile = "terraform"
   }
 }
@@ -22,7 +22,7 @@ terraform {
 # ---------------------------------------------
 provider "aws" {
   # profile = "terraform"
-  region  = "ap-northeast-1"
+  region = "ap-northeast-1"
 }
 
 # provider "aws" {
