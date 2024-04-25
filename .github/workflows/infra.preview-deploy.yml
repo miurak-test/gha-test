@@ -28,28 +28,39 @@ jobs:
   preview:
     name: "Preview"
     runs-on: ubuntu-latest
+    outputs:
+      TF_PLAN_EXITCODE: ${{ steps.plan.outputs.exitcode }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
       - name: Setup terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
+
       - name: Terraform format
         run: 
           terraform fmt -check
+
       - name: Configure AWS credential
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
+
       - name: Terraform init
         run: 
           terraform init -no-color
+
       - name: Terraform validate
         run: 
           terraform validate -no-color
+
       - name: Terraform plan
+        continue-on-error: true
+        id: plan
         run: | 
           terraform plan \
             -var 'project=${{ env.TF_PROJECT }}' \
@@ -59,3 +70,35 @@ jobs:
             -input=false \
             -no-color \
             -detailed-exitcode
+
+      - name: Send GitHub Action trigger data to Slack workflow
+        id: slack
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+            channel-id: "C070K5Z9UQK" 
+            payload: |
+                {
+                    "attachments": [
+                        {
+                            "blocks": [
+                                {
+                                    "type": "header",
+                                    "text": {
+                                        "type": "plain_text",
+                                        "text": "Request for approve",
+                                        "emoji": true
+                                    }
+                                },
+                                {
+                                    "type": "section",
+                                    "text": {
+                                        "type": "mrkdwn",
+                                        "text": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+        env:
+            SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
